@@ -446,10 +446,10 @@ function totalAndMax(){
 }
 
 function classify(indexPct, hPct, cPct, tPct){
-  let cls = (indexPct >= 75) ? "Perfil muito consistente com AH/SD"
-          : (indexPct >= 60) ? "Indícios fortes de AH/SD"
-          : (indexPct >= 40) ? "Potencial presente (recomenda-se avaliação aprofundada)"
-          : "Poucos indícios";
+  let cls = (indexPct >= 75) ? "Perfil muito consistente com AH/SD: convergência robusta entre itens e 2 de 3 domínios centrais (Habilidade acima da média/Criatividade/Envolvimento com a tarefa) ≥65% — frequentemente os três. A pessoa aprende muito rápido, cria soluções originais e sustenta dedicação quando há desafio."
+          : (indexPct >= 60) ? "Indícios fortes de AH/SD: padrão consistente em múltiplos itens, normalmente com Habilidades acima da média e/ou Criatividade altos e Envolvimento com a tarefa moderado-alto. O perfil já aparece na prática (aprendizagem rápida, conexões incomuns, autonomia)."
+          : (indexPct >= 40) ? "Potencial presente: há sinais parciais; geralmente 1–2 domínios acima (ex.: Habilidade acima da média e/ou Criatividade) com Envolvimento com a tarefa mediano. É um perfil com matéria-prima (curiosidade, vocabulário, memória, conexões rápidas) que ainda não virou desempenho constante."
+          : "Poucos indícios: as respostas não sustentam um perfil amplo de AH/SD neste momento. Pode haver talentos pontuais, mas o padrão não é consistente entre Habilidade acima da média/Criatividade/Envolvimento com a tarefa.";
   if((cls.startsWith("Perfil") || cls.startsWith("Indícios"))){
     const strongCount = [hPct, cPct, tPct].filter(p=>p>=65).length;
     if(strongCount < 2){
@@ -505,9 +505,6 @@ function renderPatientInfo(){
   const g = $("#pacInfo"); g.innerHTML="";
   const info = [
     ["Nome", patient.nome || "-"],
-    ["CPF", maskCPF(patient.cpf)],
-    ["Nascimento", fmtDateISO(patient.data_nascimento)],
-    ["E-mail", patient.email || "-"],
     ["WhatsApp", patient.whatsapp || "-"]
   ];
   for(const [k,v] of info){
