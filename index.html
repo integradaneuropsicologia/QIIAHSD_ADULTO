@@ -77,21 +77,21 @@
 <div class="wrap">
   <div class="card">
     <h1>Questionário para Identificação de Indicadores de Altas Habilidades/Superdotação</h1>
-    
 
     <div class="legend">
       <span class="pill">Habilidade acima da média</span>
       <span class="pill">Criatividade</span>
-      <span class="pill"> Comprometimento</span>
-      <span class="pill"> Liderança/Socioemocional</span>
-      <span class="pill"> Artes/Esportes</span>
+      <span class="pill">Comprometimento</span>
+      <span class="pill">Liderança/Socioemocional</span>
+      <span class="pill">Artes/Esportes</span>
     </div>
 
     <div id="pacInfo" class="grid-info" style="display:none;"></div>
 
     <div id="progressWrap" style="display:none; gap:8px; align-items:center; margin:8px 0 0;">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px">
-        <span class="muted" id="progressText">Progresso: 0/72</span>
+        <!-- corrigido 72 -> 73 -->
+        <span class="muted" id="progressText">Progresso: 0/73</span>
         <button id="clearDraft" class="btn ghost" type="button" title="Limpar rascunho local">Limpar rascunho</button>
       </div>
       <div class="progress"><div class="bar" id="bar"></div></div>
@@ -116,7 +116,7 @@ const SHEETDB_BASE = "https://sheetdb.io/api/v1/8pmdh33s9fvy8";
 const SHEETS = { PATIENTS:"Patients", TOKENS:"LinkTokens", SCORES:"Scores_QIIAHSD_ADULTO" };
 const CODE = "QIIAHSD_ADULTO";
 const PORTAL_URL = "https://integradaneuropsicologia.github.io/formularios/";
-const RELEASE_KEYS = ["QIIAHSD_ADULTO"]; // ajuste se usar outro nome de liberação
+const RELEASE_KEYS = ["QIIAHSD_ADULTO"];
 
 /* ===== HELPERS ===== */
 const $ = s => document.querySelector(s);
@@ -207,11 +207,7 @@ const HOURS = [
   {v:4,l:'>20 h/sem'}
 ];
 
-/* ===== ITENS (schema) =====
-   id: string
-   type: 'likert' | 'tri' | 'hours' | 'single' | 'checkbox' | 'text' | 'section'
-   invert: true (só pra cálculo)
-*/
+/* ===== ITENS ===== */
 const AREAS_TAGS = [
   "Linguagem","Matemática","Ciências","Tecnologia","Artes visuais","Música",
   "Esportes","História","Filosofia","Programação","Xadrez/Estratégia","Escrita/Criação","Liderança/Projetos","Outros"
@@ -341,6 +337,7 @@ const A_IDS = ["64","65","66","67","68","69","70","71","72"];
 /* ===== ESTADO ===== */
 let patient=null, tokenRow=null, CPF="";
 const STORAGE_KEY = `AHSD_${qs("token")||'anon'}`;
+let startAt = Date.now();
 
 /* ===== RENDER ===== */
 function renderQuestions(){
@@ -483,14 +480,13 @@ function updateProgress(){
   $("#bar").style.width = `${(answered/totalReq)*100}%`;
 }
 
-/* ===== SCORING (para laudo/escore interno) ===== */
+/* ===== SCORING ===== */
 function valueOf(id){
   const it = ITEMS.find(x=>x.id===id);
   if(!it) return 0;
   if(it.type==="checkbox"){
     const n = $$(`input[name="q_${id}"]:checked`).length;
-    return Math.min(n, 4); // teto 4
-    // isso significa: marcar 8 áreas não dá 8 pontos; corta em 4
+    return Math.min(n, 4);
   }
   if(it.type==="text"){
     return 0;
@@ -499,7 +495,7 @@ function valueOf(id){
   if(!sel) return 0;
   let val = Number(sel.value);
   if(it.type==="likert" && it.invert){
-    val = 4 - val; // inversão só afeta pontuação, NÃO o texto salvo
+    val = 4 - val;
   }
   return val;
 }
@@ -508,7 +504,6 @@ function sumIds(arr){
 }
 
 function scoreA(){
-  // domínio Artes/Esportes tem regras próprias
   const base = ["64","65","66","67","68","69","70"].reduce((s,id)=> s + valueOf(id), 0);
   const capBase = Math.min(base, 8);
   const prem = Math.min(valueOf("71"), 4);
@@ -523,7 +518,6 @@ const L_MAX = 4 * L_IDS.length; // 21*4 = 84
 const A_MAX = 16;
 
 function totalAndMax(){
-  // total bruto do perfil inteiro
   const allIds = ITEMS
     .map(i=>i.id)
     .filter(id => !["64","65","66","67","68","69","70","71","72","70txt"].includes(id) && !id.startsWith("hdr"));
@@ -533,13 +527,12 @@ function totalAndMax(){
   }
   t += scoreA();
 
-  // máximo teórico
   let m = 0;
   for(const id of allIds){
     const it = ITEMS.find(x=>x.id===id);
     if(!it) continue;
     if(it.type==="text"||it.type==="section") continue;
-    m += 4; // todos os itens comuns ou checkbox têm teto efetivo 4
+    m += 4;
   }
   m += A_MAX;
 
@@ -547,7 +540,6 @@ function totalAndMax(){
 }
 
 function classify(indexPct, hPct, cPct, tPct){
-  // leitura clínica resumida
   let cls =
     (indexPct >= 75)
       ? "Perfil muito consistente com AH/SD: convergência robusta entre itens e 2 de 3 domínios centrais (Habilidade acima da média/Criatividade/Envolvimento com a tarefa) ≥65% — frequentemente os três. A pessoa aprende muito rápido, cria soluções originais e sustenta dedicação quando há desafio."
@@ -557,23 +549,14 @@ function classify(indexPct, hPct, cPct, tPct){
       ? "Potencial presente: há sinais parciais; geralmente 1–2 domínios acima (ex.: Habilidade acima da média e/ou Criatividade) com Envolvimento com a tarefa mediano. É um perfil com matéria-prima (curiosidade, vocabulário, memória, conexões rápidas) que ainda não virou desempenho constante."
       : "Poucos indícios: as respostas não sustentam um perfil amplo de AH/SD neste momento. Pode haver talentos pontuais, mas o padrão não é consistente entre Habilidade acima da média/Criatividade/Envolvimento com a tarefa.";
 
-  // ajuste fino: se não bateu 2 domínios >=65%, cai pra "Potencial presente"
-  if((cls.startsWith("Perfil") || cls.startsWith("Indícios"))){
-    const strongCount = [hPct, cPct, tPct].filter(p=>p>=65).length;
-    if(strongCount < 2){
-      cls = "Potencial presente (recomenda-se avaliação aprofundada)";
-    }
+  const strongCount = [hPct, cPct, tPct].filter(p=>p>=65).length;
+  if((cls.startsWith("Perfil") || cls.startsWith("Indícios")) && strongCount < 2){
+    cls = "Potencial presente (recomenda-se avaliação aprofundada)";
   }
   return cls;
 }
 
-/* ===== FUNÇÕES P/ RESPOSTA HUMANA (questions) ===== */
-/* <<< NOVO >>>
-   vamos montar um texto auditável "id. pergunta => resposta".
-   - radio (likert/tri/hours/single): pega o label da opção escolhida
-   - checkbox: lista marcados separados por vírgula
-   - text (70txt): inclui se tiver texto
-*/
+/* ===== QUESTIONS (texto auditável) ===== */
 function getOptionsForItem(it){
   if(it.type==="likert"){
     return LIKERT.map(o=>({value:String(o.v),label:o.l}));
@@ -598,7 +581,6 @@ function getAnswerLabelForItem(it){
     return v;
   }
 
-  // radio-like
   const sel = $(`input[name="q_${it.id}"]:checked`);
   if(!sel) return "";
   const val = String(sel.value);
@@ -611,20 +593,14 @@ function collectQuestionsAnswers(){
   const lines = [];
   for(const it of ITEMS){
     if(it.type==="section") continue;
-
-    // texto da pergunta
     const qText = `${it.id}. ${it.text}`;
-
-    // resposta marcada
     const ans = getAnswerLabelForItem(it);
 
-    // item texto opcional (70txt): se vazio, pula; pros outros, se vazio não deve acontecer pq eles são obrigatórios
     if(it.type==="text"){
-      if(ans){ // só salva se a pessoa escreveu algo
+      if(ans){
         lines.push(`${qText} => ${ans}`);
       }
     }else{
-      // pros demais itens a resposta deve existir no envio final
       if(ans){
         lines.push(`${qText} => ${ans}`);
       }
@@ -633,7 +609,7 @@ function collectQuestionsAnswers(){
   return lines.join("\n");
 }
 
-/* ===== BOOT (token + paciente) ===== */
+/* ===== BOOT ===== */
 (async function boot(){
   try{
     const TOKEN = qs("token");
@@ -664,7 +640,6 @@ function collectQuestionsAnswers(){
       return;
     }
 
-    // Já respondeu?
     const doneKeys = RELEASE_KEYS.map(k => `${k}_FEITO`);
     const anyDoneFlag = doneKeys.some(k =>
       String(patient[k]||"").trim().toLowerCase()==="sim"
@@ -685,6 +660,8 @@ function collectQuestionsAnswers(){
     $("#form").style.display = "block";
     $("#progressWrap").style.display = "block";
     hideBox("#alert");
+
+    startAt = Date.now();
 
   }catch(err){
     console.error(err);
@@ -744,7 +721,7 @@ $("#form").addEventListener("submit", async (e)=>{
   try{
     if(!patient) throw new Error("Sessão inválida. Recarregue o link.");
 
-    // Validação: todos menos texto opcional 70txt
+    // validação (tudo exceto texto opcional 70txt)
     for(const it of ITEMS){
       if(it.type==="section"||it.type==="text") continue;
       if(it.type==="checkbox"){
@@ -763,7 +740,7 @@ $("#form").addEventListener("submit", async (e)=>{
       }
     }
 
-    // Domínios
+    // domínios
     const H = sumIds(H_IDS);
     const C = sumIds(C_IDS);
     const T = sumIds(T_IDS);
@@ -781,18 +758,39 @@ $("#form").addEventListener("submit", async (e)=>{
     const cls = classify(idx, hPct, cPct, tPct);
 
     const categoria_csv = [
-      `Habilidade acima da média=${H}`,`Habilidade acima da média_pct=${hPct}`,
-      `Criatividade=${C}`,`Criatividade_pct=${cPct}`,
-      `Comprometimento com a tarefa=${T}`,`Comprometimento com a tarefa_pct=${tPct}`,
-      `Liderança=${L}`,`Liderança_pct=${lPct}`,
-      `Artes/esportes=${A}`,`Artes/esportes_pct=${aPct}`,
-      `TOTAL=${total}`,`MAX=${max}`,
-      `IndicePct=${idx}`,`Classificacao=${cls}`,
-      `HCT_ge65=${[hPct,cPct,tPct].filter(p=>p>=65).length}`
+      `Classificacao=${cls}`
     ].join(',');
 
-    // <<< NOVO >>>
-    // Monta bloco auditável pergunta => resposta em texto humano
+    // duração do preenchimento
+    const durationSec = Math.round((Date.now() - startAt)/1000);
+
+    // métricas completas (JSON na coluna metrics)
+    const metricsObj = {
+      index_percent: idx,
+      classification: cls,
+      raw_scores: {
+        HabilidadeAcimaMedia: H,
+        Criatividade: C,
+        Comprometimento: T,
+        LiderancaSocioemocional: L,
+        ArtesEsportes: A
+      },
+      max_scores: {
+        H_MAX, C_MAX, T_MAX, L_MAX, A_MAX
+      },
+      percents: {
+        H_pct: hPct,
+        C_pct: cPct,
+        T_pct: tPct,
+        L_pct: lPct,
+        A_pct: aPct
+      },
+      total_raw: total,
+      total_max: max,
+      duration_sec: durationSec
+    };
+
+    // bloco auditável "pergunta => resposta"
     const questionsStr = collectQuestionsAnswers();
 
     await sheetCreate(SHEETS.SCORES, {
@@ -802,13 +800,13 @@ $("#form").addEventListener("submit", async (e)=>{
       code: CODE,
       source: "paciente",
       submitted_at: new Date().toISOString(),
-      total: total,
+      // total passa a ser o índice global (%)
+      total: idx,
       categoria: categoria_csv,
       metrics: "",
-      questions: questionsStr // <<< NOVO >>>
+      questions: questionsStr
     });
 
-    // Marca como feito
     const doneUpdates = {};
     RELEASE_KEYS.map(k=>`${k}_FEITO`).forEach(k=>{
       if(k in patient) doneUpdates[k] = "sim";
